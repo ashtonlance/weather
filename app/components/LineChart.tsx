@@ -8,6 +8,8 @@ export default function LineChart({ data }: LineChartProps) {
   return (
     <ResponsiveLine
       data={data}
+      animate
+      enableSlices="x"
       margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
       xScale={{ type: "point" }}
       yScale={{
@@ -17,25 +19,49 @@ export default function LineChart({ data }: LineChartProps) {
         stacked: false,
         reverse: false,
       }}
-      axisTop={null}
-      axisRight={null}
       axisBottom={{
-        tickSize: 5,
-        tickPadding: 5,
-        tickRotation: 0,
+        // format: "%b %d",
         legend: "Date",
-        legendOffset: 36,
-        legendPosition: "middle",
+        legendOffset: -12,
+        tickValues: "every 2 days",
       }}
       axisLeft={{
-        tickSize: 5,
-        tickPadding: 5,
-        tickRotation: 0,
-        legend: "Temperature",
-        legendOffset: -40,
-        legendPosition: "middle",
+        legend: "Temperature (°F)",
+        legendOffset: 12,
       }}
-      colors={{ scheme: "dark2" }}
+      colors={{ scheme: "nivo" }}
+      theme={{
+        tooltip: {
+          container: {
+            color: "var(--background)",
+          },
+        },
+        labels: {
+          text: {
+            color: "var(--background)",
+          },
+        },
+        axis: {
+          domain: {
+            line: {
+              stroke: "var(--accent)",
+            },
+          },
+          ticks: {
+            line: {
+              stroke: "var(--accent)",
+            },
+            text: {
+              color: "var(--foreground)",
+            },
+          },
+          legend: {
+            text: {
+              color: "var(--primary)",
+            },
+          },
+        },
+      }}
       curve="natural"
       pointSize={10}
       pointColor={{ theme: "background" }}
