@@ -35,7 +35,7 @@ interface ForecastItem {
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Forecast Analyzer" },
+    { title: "Forecast Comparison" },
     {
       name: "description",
       content: "Compare forecasted temperatures between cities",
@@ -283,16 +283,12 @@ export default function Index() {
       <h1 className="py-4 text-4xl font-bold lg:font-extrabold">
         Forecast Comparison
       </h1>
-      <form
-        className="flex flex-wrap gap-2 lg:flex-nowrap"
-        onSubmit={handleSubmit}
-      >
+      <form className="flex flex-wrap gap-2" onSubmit={handleSubmit}>
         {cities.map((city, index) => {
           const newUuid = uuid();
           return (
             <CityInput
               city={city}
-              // key={index}
               key={newUuid}
               index={index}
               onUpdate={updateCity}
