@@ -21,7 +21,11 @@ export default function ForecastTable({
             {showSevenDays ? (
               <>
                 {forecastData[0]?.list.slice(0, 7).map((day, index) => (
-                  <th scope="col" key={index} className="px-6 py-3 text-left">
+                  <th
+                    scope="col"
+                    key={index}
+                    className="px-6 py-3 pl-0 text-left"
+                  >
                     {new Date(day?.dt * 1000).toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
@@ -33,7 +37,11 @@ export default function ForecastTable({
             ) : (
               <>
                 {forecastData[0]?.list.slice(0, 3).map((day, index) => (
-                  <th scope="col" key={index} className="px-6 py-3 text-left">
+                  <th
+                    scope="col"
+                    key={index}
+                    className="px-6 py-3 pl-0 text-left"
+                  >
                     {new Date(day?.dt * 1000).toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",

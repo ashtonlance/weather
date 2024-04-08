@@ -6,18 +6,21 @@ import { LineGraphData, WeatherData } from "@/types";
 import { getDailyHighs } from "@/utils";
 import { json, LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate, useNavigation } from "@remix-run/react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { usePlacesWidget } from "react-google-autocomplete";
+import { v4 as uuid } from "uuid";
+
 interface City {
   error?: string;
   lat?: number;
   lon?: number;
+  name?: string;
 }
 interface CityInputProps {
-  index: number;
+  index: number | string;
   city: City;
-  onUpdate: (index: number, lat: number, lon: number) => void;
-  onRemove: (index: number) => void;
+  onUpdate: (index: number | string, lat: number, lon: number) => void;
+  onRemove: (index: number | string) => void;
 }
 
 interface ForecastItem {
@@ -65,9 +68,26 @@ export const loader: LoaderFunction = async ({ request }) => {
   return json({ results });
 };
 
-function CityInput({ index, onUpdate, onRemove }: CityInputProps) {
+function CityInput({ index, city, onUpdate, onRemove }: CityInputProps) {
   const { ref: autocompleteRef } = useCityAutocomplete(index, onUpdate);
-
+  const [cityName, setCityName] = useState<string | null>(null);
+  const ENV = useEnv();
+  useEffect(() => {
+    if (city.lat && city.lon) {
+      fetch(
+        `https://api.openweathermap.org/geo/1.0/reverse?lat=${city.lat}&lon=${city.lon}&limit=1&appid=${ENV.OPEN_WEATHER_API_KEY}`,
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          if (data[0]) {
+            setCityName(
+              `${data[0].name}, ${data[0].state}, ${data[0].country}`,
+            );
+          }
+        })
+        .catch((error) => console.log(error));
+    }
+  }, [city.lat, city.lon]);
   return (
     <div className="relative flex items-center">
       <input
@@ -75,6 +95,7 @@ function CityInput({ index, onUpdate, onRemove }: CityInputProps) {
         type="text"
         placeholder="Enter city and state"
         className="flex h-9 w-full max-w-60 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        defaultValue={cityName || ""}
         //@ts-expect-error ref is not a valid prop for input
         ref={autocompleteRef}
         autoComplete="new-password"
@@ -139,7 +160,6 @@ async function fetchWeather(
     });
 
     weatherData.cityName = geoData[0]?.name;
-    console.log(weatherData, "weatherData");
     return weatherData;
   } catch (error) {
     console.error("Error fetching weather data:", error);
@@ -148,8 +168,8 @@ async function fetchWeather(
 }
 
 function useCityAutocomplete(
-  index: number,
-  updateCity: (index: number, lat: number, lon: number) => void,
+  index: string | number,
+  updateCity: (index: string | number, lat: number, lon: number) => void,
 ) {
   const ENV = useEnv();
   return usePlacesWidget({
@@ -183,42 +203,13 @@ export default function Index() {
     setViewMode(viewMode === "graph" ? "table" : "graph");
   };
 
-  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   const queryParams = new URLSearchParams();
-  //   cities.forEach(({ lat, lon }) => {
-  //     queryParams.append("location", `${lat},${lon}`);
-  //   });
-  //   navigate(`/?${queryParams}`);
-  // };
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const queryParams = new URLSearchParams();
-    let hasError = false;
-
-    cities.forEach(({ lat, lon }, index) => {
-      const cityInput = document.getElementById(
-        `city${index}`,
-      ) as HTMLInputElement;
-      const cityValue = cityInput.value.trim();
-
-      if (cityValue && cityValue.split(",").length < 2) {
-        console.log(cityValue, "valuez");
-        hasError = true;
-        cityInput.setCustomValidity(
-          "Please enter a valid city from the dropdown menu",
-        );
-      } else {
-        queryParams.append("location", `${lat},${lon}`);
-      }
+    cities.forEach(({ lat, lon }) => {
+      queryParams.append("location", `${lat},${lon}`);
     });
-
-    if (hasError) {
-      // Handle error display logic here
-    } else {
-      navigate(`/?${queryParams}`);
-    }
+    navigate(`/?${queryParams}`);
   };
 
   const addCityInput = () => {
@@ -226,7 +217,7 @@ export default function Index() {
     setCities(newCities);
   };
 
-  const updateCity = (index: number, lat: number, lon: number) => {
+  const updateCity = (index: number | string, lat: number, lon: number) => {
     setCities((prevCities) => {
       const updatedCities = prevCities.map((city, cityIndex) => {
         if (cityIndex === index) {
@@ -238,9 +229,21 @@ export default function Index() {
     });
   };
 
-  const removeCity = (index: number) => {
-    const newCities = cities.filter((_, i) => i !== index);
-    setCities(newCities);
+  // const removeCity = (e, lat: number, lon: number) => {
+  //   e.preventDefault();
+  //   const newCities = cities.filter(
+  //     (city) => city.lat !== lat && city.lon !== lon,
+  //   );
+  //   setCities(newCities);
+  // };
+
+  // From Claude
+  const removeCity = (index: number | string) => {
+    setCities((prevCities) => {
+      const newCities = [...prevCities];
+      newCities.splice(index as number, 1);
+      return newCities;
+    });
   };
 
   const toggleForecastDuration = () => {
@@ -249,6 +252,7 @@ export default function Index() {
 
   // Process forecast data for the LineChart component
   const lineGraphData: LineGraphData[] = useMemo(() => {
+    //@ts-expect-error forecastData is possibly null
     return forecastData.map((cityData) => {
       const dailyHighs = getDailyHighs(cityData?.list);
       // Filter based on toggle state (show 3 or 7 days)
@@ -272,15 +276,16 @@ export default function Index() {
         onSubmit={handleSubmit}
       >
         {cities.map((city, index) => {
+          const newUuid = uuid();
           return (
-            <div key={index} className="relative flex items-center">
-              <CityInput
-                city={city}
-                index={index}
-                onUpdate={updateCity}
-                onRemove={removeCity}
-              />
-            </div>
+            <CityInput
+              city={city}
+              // key={index}
+              key={newUuid}
+              index={index}
+              onUpdate={updateCity}
+              onRemove={removeCity}
+            />
           );
         })}
         <Button

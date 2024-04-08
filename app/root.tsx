@@ -14,6 +14,7 @@ export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 export function loader() {
   const ENV = {
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+    OPEN_WEATHER_API_KEY: process.env.OPEN_WEATHER_API_KEY,
   };
   return json({ ENV });
 }
