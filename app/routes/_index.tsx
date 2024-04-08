@@ -70,8 +70,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 function CityInput({ index, city, onUpdate, onRemove }: CityInputProps) {
   const { ref: autocompleteRef } = useCityAutocomplete(index, onUpdate);
-  const [cityName, setCityName] = useState<string | null>(null);
+  const [cityName, setCityName] = useState<string | null>("");
+  const [loading, setLoading] = useState(true); // Add loading state
   const ENV = useEnv();
+
   useEffect(() => {
     if (city.lat && city.lon) {
       fetch(
@@ -83,40 +85,59 @@ function CityInput({ index, city, onUpdate, onRemove }: CityInputProps) {
             setCityName(
               `${data[0].name}, ${data[0].state}, ${data[0].country}`,
             );
+          } else {
+            setCityName(null); // Set cityName to null if there are no results
           }
+          setLoading(false); // Set loading to false when fetch is completed
         })
-        .catch((error) => console.log(error));
+        .catch((error) => {
+          console.log(error);
+          setCityName(null); // Set cityName to null if the fetch fails
+          setLoading(false); // Set loading to false when fetch fails
+        });
+    } else if (!city.lat && !city.lon) {
+      setCityName(null);
+      setLoading(false); // Set loading to false when lat and lon are not provided
     }
   }, [city.lat, city.lon]);
+
   return (
-    <div className="relative flex items-center">
-      <input
-        id={`city${index}`}
-        type="text"
-        placeholder="Enter city and state"
-        className="flex h-9 w-full max-w-60 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-        defaultValue={cityName || ""}
-        //@ts-expect-error ref is not a valid prop for input
-        ref={autocompleteRef}
-        autoComplete="new-password"
-      />
-      <Button
-        type="button"
-        onClick={() => onRemove(index)}
-        extraClasses="text-xs px-2 py-1 bg-secondary text-red-500 hover:text-red-700"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 text-red-500"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+    <div className="relative flex flex-wrap items-center">
+      <div className="flex basis-full">
+        <input
+          id={`city${index}`}
+          type="text"
+          placeholder="Enter city and state"
+          className="w-fu ll flex  h-9 max-w-60 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          defaultValue={cityName || ""}
+          //@ts-expect-error ref is not a valid prop for input
+          ref={autocompleteRef}
+          autoComplete="new-password"
+        />
+        <Button
+          type="button"
+          onClick={() => onRemove(index)}
+          extraClasses="text-xs px-2 py-1 bg-secondary text-red-500 hover:text-red-700"
         >
-          <path
-            fillRule="evenodd"
-            d="M10 12.586l-4.95 4.95-1.414-1.414L8.586 11 3.636 6.05l1.414-1.414L10 9.172l4.95-4.95 1.414 1.414L11.414 11l4.95 4.95-1.414 1.414L10 12.586z"
-          />
-        </svg>
-      </Button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 text-red-500"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 12.586l-4.95 4.95-1.414-1.414L8.586 11 3.636 6.05l1.414-1.414L10 9.172l4.95-4.95 1.414 1.414L11.414 11l4.95 4.95-1.414 1.414L10 12.586z"
+            />
+          </svg>
+        </Button>
+      </div>
+      {cityName === null &&
+        !loading /* Display error message only when fetch is completed and there are no results */ && (
+          <div className="absolute -bottom-6 text-xs text-red-500">
+            Select a valid city from the dropdown
+          </div>
+        )}
     </div>
   );
 }
@@ -229,15 +250,6 @@ export default function Index() {
     });
   };
 
-  // const removeCity = (e, lat: number, lon: number) => {
-  //   e.preventDefault();
-  //   const newCities = cities.filter(
-  //     (city) => city.lat !== lat && city.lon !== lon,
-  //   );
-  //   setCities(newCities);
-  // };
-
-  // From Claude
   const removeCity = (index: number | string) => {
     setCities((prevCities) => {
       const newCities = [...prevCities];
