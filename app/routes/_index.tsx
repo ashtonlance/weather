@@ -8,7 +8,6 @@ import { json, LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate, useNavigation } from "@remix-run/react";
 import { FormEvent, useMemo, useState } from "react";
 import { usePlacesWidget } from "react-google-autocomplete";
-
 interface City {
   error?: string;
   lat?: number;
@@ -68,16 +67,17 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 function CityInput({ index, onUpdate, onRemove }: CityInputProps) {
   const { ref: autocompleteRef } = useCityAutocomplete(index, onUpdate);
+
   return (
     <div className="relative flex items-center">
       <input
         id={`city${index}`}
         type="text"
-        name={`city${index}`}
         placeholder="Enter city and state"
         className="flex h-9 w-full max-w-60 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         //@ts-expect-error ref is not a valid prop for input
         ref={autocompleteRef}
+        autoComplete="new-password"
       />
       <Button
         type="button"
@@ -138,7 +138,7 @@ async function fetchWeather(
       return forecastItem;
     });
 
-    weatherData.cityName = geoData[0].name;
+    weatherData.cityName = geoData[0]?.name;
     console.log(weatherData, "weatherData");
     return weatherData;
   } catch (error) {
@@ -172,7 +172,10 @@ export default function Index() {
   const navigate = useNavigate();
   const navigation = useNavigation();
   const { results: forecastData } = useLoaderData<typeof loader>();
-  const [cities, setCities] = useState<City[]>([{ lat: 0, lon: 0 }]);
+  const [cities, setCities] = useState<City[]>([
+    { lat: 0, lon: 0 },
+    { lat: 0, lon: 0 },
+  ]);
 
   const [showSevenDays, setShowSevenDays] = useState(false); // State to toggle forecast duration
   const [viewMode, setViewMode] = useState<"graph" | "table">("graph"); // State to toggle between graph and table view
@@ -180,13 +183,42 @@ export default function Index() {
     setViewMode(viewMode === "graph" ? "table" : "graph");
   };
 
+  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   const queryParams = new URLSearchParams();
+  //   cities.forEach(({ lat, lon }) => {
+  //     queryParams.append("location", `${lat},${lon}`);
+  //   });
+  //   navigate(`/?${queryParams}`);
+  // };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const queryParams = new URLSearchParams();
-    cities.forEach(({ lat, lon }) => {
-      queryParams.append("location", `${lat},${lon}`);
+    let hasError = false;
+
+    cities.forEach(({ lat, lon }, index) => {
+      const cityInput = document.getElementById(
+        `city${index}`,
+      ) as HTMLInputElement;
+      const cityValue = cityInput.value.trim();
+
+      if (cityValue && cityValue.split(",").length < 2) {
+        console.log(cityValue, "valuez");
+        hasError = true;
+        cityInput.setCustomValidity(
+          "Please enter a valid city from the dropdown menu",
+        );
+      } else {
+        queryParams.append("location", `${lat},${lon}`);
+      }
     });
-    navigate(`/?${queryParams}`);
+
+    if (hasError) {
+      // Handle error display logic here
+    } else {
+      navigate(`/?${queryParams}`);
+    }
   };
 
   const addCityInput = () => {
@@ -195,9 +227,15 @@ export default function Index() {
   };
 
   const updateCity = (index: number, lat: number, lon: number) => {
-    const newCities = [...cities];
-    newCities[index] = { lat, lon };
-    setCities(newCities);
+    setCities((prevCities) => {
+      const updatedCities = prevCities.map((city, cityIndex) => {
+        if (cityIndex === index) {
+          return { lat, lon };
+        }
+        return city;
+      });
+      return updatedCities;
+    });
   };
 
   const removeCity = (index: number) => {
@@ -227,7 +265,7 @@ export default function Index() {
   return (
     <div className="container">
       <h1 className="py-4 text-4xl font-bold lg:font-extrabold">
-        Forecast Analyzer
+        Forecast Comparison
       </h1>
       <form
         className="flex flex-wrap gap-2 lg:flex-nowrap"
@@ -252,7 +290,11 @@ export default function Index() {
         >
           Add City
         </Button>
-        <Button disabled={navigation.state === "loading"} type="submit">
+        <Button
+          extraClasses="bg-sky-600 hover:bg-sky-700"
+          disabled={navigation.state === "loading"}
+          type="submit"
+        >
           {navigation.state === "loading" ? (
             <>
               Fetching
@@ -266,6 +308,23 @@ export default function Index() {
           )}
         </Button>
       </form>
+
+      <div className="flex gap-4 pb-2">
+        <Button
+          extraClasses="mt-4 bg-white text-secondary-foreground hover:bg-secondary"
+          type="button"
+          onClick={toggleForecastDuration}
+        >
+          {showSevenDays ? "Show 3 Days" : "Show 7 Days"}
+        </Button>
+        <Button
+          extraClasses="mt-4 bg-white text-secondary-foreground hover:bg-secondary"
+          type="button"
+          onClick={toggleViewMode}
+        >
+          {viewMode === "graph" ? "Show Table View" : "Show Graph View"}
+        </Button>
+      </div>
       <div className="h-full">
         {forecastData.length > 0 &&
           (viewMode === "graph" ? (
@@ -276,18 +335,6 @@ export default function Index() {
               showSevenDays={showSevenDays}
             />
           ))}
-      </div>
-      <div className="flex gap-4 pb-8">
-        <Button
-          extraClasses="mt-4"
-          type="button"
-          onClick={toggleForecastDuration}
-        >
-          {showSevenDays ? "Show 3 Days" : "Show 7 Days"}
-        </Button>
-        <Button extraClasses="mt-4" type="button" onClick={toggleViewMode}>
-          {viewMode === "graph" ? "Show Table View" : "Show Graph View"}
-        </Button>
       </div>
     </div>
   );
