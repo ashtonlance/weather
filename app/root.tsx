@@ -1,4 +1,4 @@
-import { LinksFunction } from "@remix-run/node";
+import { json, LinksFunction, SerializeFrom } from "@remix-run/node";
 import {
   Links,
   Meta,
@@ -10,6 +10,14 @@ import {
 import styles from "@/globals.css?url";
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
+
+export function loader() {
+  const ENV = {
+    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+  };
+  return json({ ENV });
+}
+export type LoaderData = SerializeFrom<typeof loader>;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
