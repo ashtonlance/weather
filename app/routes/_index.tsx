@@ -132,12 +132,6 @@ function CityInput({ index, city, onUpdate, onRemove }: CityInputProps) {
           </svg>
         </Button>
       </div>
-      {cityName === null &&
-        !loading /* Display error message only when fetch is completed and there are no results */ && (
-          <div className="absolute -bottom-6 text-xs text-red-500">
-            Select a valid city from the dropdown
-          </div>
-        )}
     </div>
   );
 }
