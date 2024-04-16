@@ -3,16 +3,7 @@ import { createRemixStub } from "@remix-run/testing";
 import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import HomePage from "app/routes/_index";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-
-beforeAll(() => {
-  import.meta.env.GOOGLE_MAPS_API_KEY =
-    "AIzaSyAemoL7VieMHoZzfwnM6UNLWksHCIJWjpQ";
-});
-
-afterAll(() => {
-  delete import.meta.env.GOOGLE_MAPS_API_KEY;
-});
+import { describe, expect, it } from "vitest";
 
 describe("Home Page", () => {
   const user = userEvent.setup();
