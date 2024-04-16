@@ -6,6 +6,7 @@ interface ButtonProps {
   type: "button" | "submit" | "reset";
   extraClasses?: string;
   disabled?: boolean;
+  name?: string;
 }
 
 export default function Button({
@@ -14,9 +15,11 @@ export default function Button({
   type,
   extraClasses,
   disabled,
+  name = "",
 }: ButtonProps) {
   return (
     <button
+      name={name}
       disabled={disabled}
       type={type}
       onClick={onClick}

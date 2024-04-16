@@ -105,6 +105,7 @@ function CityInput({ index, city, onUpdate, onRemove }: CityInputProps) {
     <div className="relative flex flex-wrap items-center">
       <div className="flex basis-full">
         <input
+          aria-label="city-input"
           id={`city${index}`}
           type="text"
           placeholder="Enter city and state"
@@ -259,7 +260,7 @@ export default function Index() {
   // Process forecast data for the LineChart component
   const lineGraphData: LineGraphData[] = useMemo(() => {
     //@ts-expect-error forecastData is possibly null
-    return forecastData.map((cityData) => {
+    return forecastData?.map((cityData) => {
       const dailyHighs = getDailyHighs(cityData?.list);
       // Filter based on toggle state (show 3 or 7 days)
       const filteredData = dailyHighs.filter((_, index) =>
@@ -301,6 +302,7 @@ export default function Index() {
           extraClasses="bg-sky-600 hover:bg-sky-700"
           disabled={navigation.state === "loading"}
           type="submit"
+          name="Fetch Forecast"
         >
           {navigation.state === "loading" ? (
             <>
@@ -333,7 +335,7 @@ export default function Index() {
         </Button>
       </div>
       <div className="h-full">
-        {forecastData.length > 0 &&
+        {forecastData?.length > 0 &&
           (viewMode === "graph" ? (
             <LineChart data={lineGraphData} />
           ) : (
